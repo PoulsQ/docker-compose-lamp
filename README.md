@@ -7,8 +7,13 @@ The main difference is that you'll find here a ready-to-use stack for LAMP :
    or PHP 8.1 + Symfony CLI 4.28.6 (actually using Symfony 6.0)
  - MySQL (5.7 OR 8.0)
 
-Another advantage is to be able to mount any folder on you disk.
-_TODO: describe how to do it_
+Another advantage is to be able to mount any folder on you disk:
+ - Add a volume to mount to the PHP machine in the docker-compose.yml (around line 18) (i.e: `./../PATH/TO/MY/PROJECT/myproject/:/home/myproject/`)
+ - Add the directory creation in the `php74/Dockerfile` or `php8/Dockerfile`: `RUN mkdir -p /home/timetracking/public`
+ - Add the proper vhost to `config/vhosts/`
+ - _Bonus: Don't forget to update your local hosts file._ 😏
+ - Rebuild the stack with command: `docker-compose build`
+
 
 Enjoy 🙏
 
