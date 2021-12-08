@@ -1,81 +1,107 @@
-FROM php:7.4.2-apache-buster
+# Official Ubuntu 20.04 focal latest
+FROM ubuntu:20.04
 
-# Surpresses debconf complaints of trying to install apt packages interactively
-# https://github.com/moby/moby/issues/4032#issuecomment-192327844
- 
-ARG DEBIAN_FRONTEND=noninteractive
+LABEL maintainer="Github PoulsQ"
 
-# Update
-RUN apt-get -y update --fix-missing && \
-    apt-get upgrade -y && \
-    apt-get --no-install-recommends install -y apt-utils && \
-    rm -rf /var/lib/apt/lists/*
+# Env var for all the script should be here
+ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV TZ=Europe/Paris
 
+# Only port 80 for a local engine
+EXPOSE 80
 
-# Install useful tools and install important libaries
-RUN apt-get -y update && \
-    apt-get -y --no-install-recommends install nano wget \
-dialog \
-libsqlite3-dev \
-libsqlite3-0 && \
-    apt-get -y --no-install-recommends install default-mysql-client \
-zlib1g-dev \
-libzip-dev \
-libicu-dev && \
-    apt-get -y --no-install-recommends install --fix-missing apt-utils \
-build-essential \
-git \
-curl \
-libonig-dev && \ 
-    apt-get -y --no-install-recommends install --fix-missing libcurl4 \
-libcurl4-openssl-dev \
-zip \
-openssl && \
-    rm -rf /var/lib/apt/lists/* && \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Working dir, cannot be changed
+WORKDIR /app
+
+# Update machine TZ
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    sudo \
+    tzdata
+
+# Setup Europe/Paris
+RUN sudo dpkg-reconfigure --frontend noninteractive tzdata
+
+# Install PHP + Apache
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    php7.4-cli php7.4 libpcre3-dev php7.4-dev php7.4-mysql php7.4-sqlite \
+    php7.4-mysqli php7.4-curl php7.4-tokenizer php7.4-json  \
+    php7.4-zip php7.4-intl php7.4-mbstring php7.4-gettext php7.4-calendar php7.4-exif  \
+    apache2
+
+# Install Freetype
+#RUN apt-get -y update && \
+#    apt-get --no-install-recommends install -y libfreetype6-dev \
+#libjpeg62-turbo-dev \
+#libpng-dev && \
+#    rm -rf /var/lib/apt/lists/* && \
+#    docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
+#    docker-php-ext-install gd
+
+# Install phalcon
+RUN cd /usr/src
+RUN pecl install phalcon-4.1.2
+RUN pecl install apcu
+
+# Install package git, unzip & zip are for composer
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    git \
+    gnupg \
+    unzip \
+    libonig-dev \
+    libxml2-dev \
+    zip && \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create custom dirs
+# Sample for custom dirs : RUN mkdir -p /home/myproject/public
+
+# Create logs dirs / files
+RUN mkdir /home/logs
+RUN > /home/logs/php_error_log
+RUN sudo chmod 755 /home/logs/php_error_log
+
+# Copy .ini configs
+COPY config/php74/php.ini /etc/php/7.4/cli/php.ini
+COPY config/php74/php.ini /etc/php/7.4/apache2/php.ini
+COPY config/php74/phalcon.ini /etc/php/7.4/mods-available/phalcon.ini
+RUN ln -s /etc/php/7.4/mods-available/phalcon.ini /etc/php/7.4/cli/conf.d/50-phalcon.ini
+RUN ln -s /etc/php/7.4/mods-available/phalcon.ini /etc/php/7.4/apache2/conf.d/50-phalcon.ini
+
+# Installing Nano
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    nano
+
+# Language packs for i18n mainly
+RUN apt-get update -q && \
+    apt-get install -qy language-pack-fr language-pack-en language-pack-de language-pack-es language-pack-it dos2unix
+
+# Symfony tool
+RUN curl -sS https://get.symfony.com/cli/installer | bash
+RUN mv /root/.symfony/bin/symfony /usr/local/bin/symfony
 
 # Install xdebug
-RUN pecl install xdebug-2.8.0 && \
-    docker-php-ext-enable xdebug
+RUN pecl install xdebug
 
 # Install redis
-RUN pecl install redis-5.1.1 && \
-    docker-php-ext-enable redis
+RUN pecl install redis
 
 # Install imagick
 RUN apt-get update && \
     apt-get -y --no-install-recommends install --fix-missing libmagickwand-dev && \
     rm -rf /var/lib/apt/lists/* && \
-    pecl install imagick && \
-    docker-php-ext-enable imagick
-
-# Other PHP7 Extensions
-
-RUN docker-php-ext-install pdo_mysql && \
-    docker-php-ext-install pdo_sqlite && \
-    docker-php-ext-install mysqli && \
-    docker-php-ext-install curl && \
-    docker-php-ext-install tokenizer && \
-    docker-php-ext-install json && \
-    docker-php-ext-install zip && \
-    docker-php-ext-install -j$(nproc) intl && \
-    docker-php-ext-install mbstring && \
-    docker-php-ext-install gettext && \
-    docker-php-ext-install calendar && \
-    docker-php-ext-install exif
-
-
-# Install Freetype 
-RUN apt-get -y update && \
-    apt-get --no-install-recommends install -y libfreetype6-dev \
-libjpeg62-turbo-dev \
-libpng-dev && \
-    rm -rf /var/lib/apt/lists/* && \
-    docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
-    docker-php-ext-install gd
+    pecl install imagick
 
 # Enable apache modules
 RUN a2enmod rewrite headers
 
 # Cleanup
 RUN rm -rf /usr/src/*
+
+CMD ["apachectl", "-D", "FOREGROUND"]

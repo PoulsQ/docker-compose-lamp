@@ -1,95 +1,105 @@
-FROM php:8.0.10-apache-buster
+# Official Ubuntu 20.04 focal latest
+FROM ubuntu:20.04
 
-# Surpresses debconf complaints of trying to install apt packages interactively
-# https://github.com/moby/moby/issues/4032#issuecomment-192327844
- 
-ARG DEBIAN_FRONTEND=noninteractive
+LABEL maintainer="Github PoulsQ"
 
-# Update
-RUN apt-get -y update --fix-missing && \
-    apt-get upgrade -y && \
-    apt-get --no-install-recommends install -y apt-utils && \
-    rm -rf /var/lib/apt/lists/*
+# Env var for all the script should be here
+ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV TZ=Europe/Paris
+
+# Only port 80 for a local engine
+EXPOSE 80
+
+# Working dir, cannot be changed
+WORKDIR /app
+
+# Update machine TZ
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    sudo \
+    tzdata
+
+# Setup Europe/Paris
+RUN sudo dpkg-reconfigure --frontend noninteractive tzdata
+
+# Find php8.0 repo
+RUN apt update -qq && \
+    apt install lsb-release ca-certificates apt-transport-https software-properties-common -qy && \
+    add-apt-repository ppa:ondrej/php
+
+# Install PHP + Apache
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    php8.0-cli php8.0 libpcre3-dev php8.0-dev php8.0-mysql php8.0-sqlite \
+    php8.0-mysqli php8.0-curl php8.0-tokenizer \
+    php8.0-zip php8.0-intl php8.0-mbstring php8.0-gettext php8.0-calendar php8.0-exif  \
+    apache2
+
+# Install Freetype
+#RUN apt-get -y update && \
+#    apt-get --no-install-recommends install -y libfreetype6-dev \
+#libjpeg62-turbo-dev \
+#libpng-dev && \
+#    rm -rf /var/lib/apt/lists/* && \
+#    docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
+#    docker-php-ext-install gd
 
 
-# Install useful tools and install important libaries
-RUN apt-get -y update && \
-    apt-get -y --no-install-recommends install nano wget \
-dialog \
-libsqlite3-dev \
-libsqlite3-0 && \
-    apt-get -y --no-install-recommends install default-mysql-client \
-zlib1g-dev \
-libzip-dev \
-libicu-dev && \
-    apt-get -y --no-install-recommends install --fix-missing apt-utils \
-build-essential \
-git \
-curl \
-libonig-dev && \ 
-    apt-get -y --no-install-recommends install --fix-missing libcurl4 \
-libcurl4-openssl-dev \
-zip \
-openssl && \
-    rm -rf /var/lib/apt/lists/* && \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+# Install package git, unzip & zip are for composer
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    git \
+    gnupg \
+    unzip \
+    libonig-dev \
+    libxml2-dev \
+    zip && \
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Create custom dirs
+# Sample for custom dirs : RUN mkdir -p /home/myproject/public
+
+# Create logs dirs / files
+RUN mkdir /home/logs
+RUN > /home/logs/php_error_log
+RUN sudo chmod 755 /home/logs/php_error_log
+
+# Copy .ini configs
+COPY config/php8/php.ini /etc/php/8.0/cli/php.ini
+COPY config/php8/php.ini /etc/php/8.0/apache2/php.ini
+
+# Installing Nano
+RUN apt-get update -qq && \
+    apt-get install -qy \
+    nano
+
+# Language packs for i18n mainly
+RUN apt-get update -q && \
+    apt-get install -qy language-pack-fr language-pack-en language-pack-de language-pack-es language-pack-it dos2unix
+
+# Symfony tool
+RUN curl -sS https://get.symfony.com/cli/installer | bash
+RUN mv /root/.symfony/bin/symfony /usr/local/bin/symfony
 
 # Install xdebug
-RUN pecl install xdebug-3.0.0 && \
-    docker-php-ext-enable xdebug
+RUN pecl install xdebug
 
 # Install redis
-RUN pecl install redis-5.3.3 && \
-    docker-php-ext-enable redis
+RUN pecl install redis
 
 # Install imagick
 RUN apt-get update && \
     apt-get -y --no-install-recommends install --fix-missing libmagickwand-dev && \
-    rm -rf /var/lib/apt/lists/*
-
-# Workarround until imagick is available in pecl with php8 support
-# Imagick Commit to install
-# https://github.com/Imagick/imagick
-ARG IMAGICK_COMMIT="132a11fd26675db9eb9f0e9a3e2887c161875206"
-
-RUN cd /usr/local/src && \
-    git clone https://github.com/Imagick/imagick && \
-    cd imagick && \
-    git checkout ${IMAGICK_COMMIT} && \
-    phpize && \
-    ./configure && \
-    make && \
-    make install && \
-    cd .. && \
-    rm -rf imagick && \
-    docker-php-ext-enable imagick
-
-# Other PHP8 Extensions
-
-RUN docker-php-ext-install pdo_mysql && \
-    docker-php-ext-install pdo_sqlite && \
-    docker-php-ext-install mysqli && \
-    docker-php-ext-install curl && \
-    docker-php-ext-install tokenizer && \
-    docker-php-ext-install zip && \
-    docker-php-ext-install -j$(nproc) intl && \
-    docker-php-ext-install mbstring && \
-    docker-php-ext-install gettext && \
-    docker-php-ext-install calendar && \
-    docker-php-ext-install exif
-
-
-# Install Freetype 
-RUN apt-get -y update && \
-    apt-get --no-install-recommends install -y libfreetype6-dev \
-libjpeg62-turbo-dev \
-libpng-dev && \
     rm -rf /var/lib/apt/lists/* && \
-    docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg && \
-    docker-php-ext-install gd
+    pecl install imagick
 
 # Enable apache modules
 RUN a2enmod rewrite headers
 
 # Cleanup
 RUN rm -rf /usr/src/*
+
+CMD ["apachectl", "-D", "FOREGROUND"]

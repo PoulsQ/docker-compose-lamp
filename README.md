@@ -1,15 +1,15 @@
 # FORK OF https://github.com/sprintcube/docker-compose-lamp
 
 The main difference is that you'll find here a ready-to-use stack for LAMP :
- - Ubuntu Jammy 22.04
+ - Ubuntu focal 20.04
  - Apache 2 
- - PHP 7.4 + Phalcon 4.0 + Symfony CLI 4.28.6 (actually using Symfony 5.4)
-   or PHP 8.1 + Symfony CLI 4.28.6 (actually using Symfony 6.0)
+ - PHP 7.4 + Phalcon 4.1.2 + Symfony CLI 4.28.6 (actually using Symfony 5.4)
+   or PHP 8.0 + Symfony CLI 4.28.6 (actually using Symfony 6.0)
  - MySQL (5.7 OR 8.0)
 
 Another advantage is to be able to mount any folder on you disk:
- - Add a volume to mount to the PHP machine in the docker-compose.yml (around line 18) (i.e: `./../PATH/TO/MY/PROJECT/myproject/:/home/myproject/`)
- - Add the directory creation in the `php74/Dockerfile` or `php8/Dockerfile`: `RUN mkdir -p /home/timetracking/public`
+ - Add a volume to mount to the PHP machine in the docker-compose.yml (~ line 18) (i.e: `./../PATH/TO/MY/PROJECT/myproject/:/home/myproject/`)
+ - Add the directory creation in the `php74/Dockerfile` or `php8/Dockerfile` (~ line 50): `RUN mkdir -p /home/myproject/public`
  - Add the proper vhost to `config/vhosts/`
  - _Bonus: Don't forget to update your local hosts file._ 😏
  - Rebuild the stack with command: `docker-compose build`
