@@ -5,7 +5,10 @@ The main difference is that you'll find here a ready-to-use stack for LAMP :
  - Apache 2 
  - PHP 7.4 + Phalcon 4.0 + Symfony CLI 4.28.6 (actually using Symfony 5.4)
    or PHP 8.1 + Symfony CLI 4.28.6 (actually using Symfony 6.0)
- - MySQL (5.8 OR 8.0)
+ - MySQL (5.7 OR 8.0)
+
+Another advantage is to be able to mount any folder on you disk.
+_TODO: describe how to do it_
 
 Enjoy 🙏
 
