@@ -1,3 +1,16 @@
+# FORK OF https://github.com/sprintcube/docker-compose-lamp
+
+The main difference is that you'll find here a ready-to-use stack for LAMP :
+ - Ubuntu Jammy 22.04
+ - Apache 2 
+ - PHP 7.4 + Phalcon 4.0 + Symfony CLI 4.28.6 (actually using Symfony 5.4)
+   or PHP 8.1 + Symfony CLI 4.28.6 (actually using Symfony 6.0)
+ - MySQL (5.8 OR 8.0)
+
+Enjoy 🙏
+
+_Here is the documentation of the project when I forked it:_
+
 #  LAMP stack built with Docker Compose
 
   
