@@ -59,8 +59,6 @@ RUN apt-get update -qq && \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Create custom dirs
-# Sample for custom dirs : RUN mkdir -p /home/myproject/public
 
 # Create logs dirs / files
 RUN mkdir /home/logs
@@ -98,6 +96,9 @@ RUN apt-get update && \
 
 # Enable apache modules
 RUN a2enmod rewrite headers
+
+# Create custom dirs
+#RUN mkdir -p /home/myproject/public
 
 # Cleanup
 RUN rm -rf /usr/src/*
