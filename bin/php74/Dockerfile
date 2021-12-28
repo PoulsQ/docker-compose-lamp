@@ -86,6 +86,10 @@ RUN apt-get update -q && \
 RUN curl -sS https://get.symfony.com/cli/installer | bash
 RUN mv /root/.symfony/bin/symfony /usr/local/bin/symfony
 
+# Phalcon tools
+RUN composer global require phalcon/devtools
+RUN ln -s /root/.config/composer/vendor/phalcon/devtools/phalcon /usr/local/bin/phalcon
+
 # Install xdebug
 RUN pecl install xdebug
 
@@ -93,10 +97,10 @@ RUN pecl install xdebug
 RUN pecl install redis
 
 # Install imagick
-RUN apt-get update && \
-    apt-get -y --no-install-recommends install --fix-missing libmagickwand-dev && \
-    rm -rf /var/lib/apt/lists/* && \
-    pecl install imagick
+#RUN apt-get update && \
+#    apt-get -y --no-install-recommends install --fix-missing libmagickwand-dev && \
+#    rm -rf /var/lib/apt/lists/* && \
+#    pecl install imagick
 
 # Enable apache modules
 RUN a2enmod rewrite headers
